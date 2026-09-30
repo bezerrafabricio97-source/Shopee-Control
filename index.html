@@ -4,7 +4,108 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shopee Control</title>
-  <link rel="stylesheet" href="css/style.css">
+  <style>
+/* ===== CORES E MEDIDAS (mude aqui para trocar o visual do app inteiro) ===== */
+:root {
+  --azul: #2563eb;
+  --menu: #0f172a;
+  --menu-ativo: #1e3a8a;
+  --fundo: #f1f5f9;
+  --borda: #e2e8f0;
+  --texto: #1e293b;
+  --suave: #64748b;
+  --largura-menu: 230px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; background: var(--fundo); color: var(--texto); }
+h1, h2 { margin: 0; }
+
+/* ===== ESTRUTURA GERAL ===== */
+.app { display: flex; min-height: 100vh; }
+.conteudo { flex: 1; min-width: 0; }
+main { padding: 24px; max-width: 1100px; }
+
+/* ===== MENU LATERAL ===== */
+.menu { width: var(--largura-menu); background: var(--menu); color: #fff; padding: 20px 14px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+.marca { display: flex; align-items: center; gap: 10px; padding: 0 8px 24px; font-weight: 700; font-size: 16px; }
+.marca-icone { width: 32px; height: 32px; border-radius: 8px; background: var(--azul); display: grid; place-items: center; }
+.menu nav { display: flex; flex-direction: column; gap: 4px; }
+.menu a { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 8px; color: #cbd5e1; text-decoration: none; font-size: 14px; }
+.menu a:hover { background: rgba(255,255,255,.06); }
+.menu a.ativo { background: var(--menu-ativo); color: #fff; }
+.menu svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ===== TOPO ===== */
+.topo { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #fff; border-bottom: 1px solid var(--borda); }
+.topo h1 { font-size: 20px; }
+.selo { font-size: 12px; color: var(--suave); background: var(--fundo); border: 1px solid var(--borda); padding: 4px 10px; border-radius: 999px; }
+
+/* ===== CARDS E PAINÉIS ===== */
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.cards.tres { grid-template-columns: repeat(3, 1fr); }
+.card, .painel { background: #fff; border: 1px solid var(--borda); border-radius: 12px; }
+.card { padding: 18px; }
+.card small { color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.card b { display: block; margin-top: 8px; font-size: 26px; }
+.painel.vazio { padding: 28px; text-align: center; color: var(--suave); }
+.painel.vazio h2 { color: var(--texto); font-size: 17px; margin-bottom: 8px; }
+.painel.texto { padding: 20px 22px; }
+.painel.texto h2 { font-size: 15px; margin-bottom: 6px; }
+.painel.texto p { margin: 0; color: var(--suave); font-size: 14px; line-height: 1.5; }
+
+/* Aviso: destaque de estoque baixo, igual ao card amarelo do dashboard */
+.aviso { display: flex; gap: 10px; align-items: flex-start; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px; }
+.aviso b { color: #92400e; }
+
+/* Nota de rodapé abaixo das tabelas, avisando que são dados de exemplo */
+.nota { font-size: 12px; color: var(--suave); margin-top: 10px; }
+
+.baixo { color: #dc2626; font-weight: 700; }
+.btn.cinza { background: #64748b; }
+.acao-linha { display: flex; gap: 6px; }
+.mini { width: 28px; height: 28px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; }
+.mini:hover { background: #fee2e2; border-color: #fca5a5; }
+
+/* ===== MODAL (formulário de nova movimentação) ===== */
+dialog#modal-mov { border: 0; border-radius: 14px; padding: 0; width: 92%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,.2); }
+dialog#modal-mov::backdrop { background: rgba(15, 23, 42, .45); }
+dialog#modal-mov form { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+dialog#modal-mov h2 { font-size: 17px; margin-bottom: 4px; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo label { font-size: 12px; color: var(--suave); font-weight: 600; }
+.campo input, .campo select { padding: 10px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.campo-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+/* ===== BARRA DE AÇÕES, BOTÕES E TABELAS ===== */
+.barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.barra h2 { font-size: 17px; }
+.barra input { flex: 1; max-width: 360px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff; }
+.btn { background: var(--azul); color: #fff; border: 0; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.btn:disabled, .barra input:disabled { opacity: .55; cursor: not-allowed; }
+.rolagem { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+th { background: #f8fafc; color: var(--suave); font-size: 12px; text-transform: uppercase; }
+tbody tr:last-child td { border-bottom: 0; }
+.vazio-linha { text-align: center; color: var(--suave); padding: 36px 16px; white-space: normal; }
+
+/* ===== CELULAR: menu vira barra inferior ===== */
+@media (max-width: 760px) {
+  .menu { position: fixed; bottom: 0; left: 0; right: 0; top: auto; width: 100%; height: auto; padding: 6px; z-index: 10; border-top: 1px solid #1e293b; }
+  .marca { display: none; }
+  .menu nav { flex-direction: row; justify-content: space-around; }
+  .menu a { flex-direction: column; gap: 3px; font-size: 11px; padding: 8px 14px; }
+  main { padding: 16px 16px 90px; }
+  .topo { padding: 14px 16px; }
+  .cards, .cards.tres { grid-template-columns: repeat(2, 1fr); }
+  .cards.tres .card:last-child { grid-column: span 2; }
+  .barra { flex-wrap: wrap; }
+  .barra input { max-width: none; }
+}
+
+  </style>
 </head>
 <body>
 <div class="app">
@@ -80,34 +181,192 @@
 
       <!-- PÁGINA: FINANCEIRO -->
       <section class="pagina" id="pagina-financeiro" hidden>
-        <div class="cards tres">
-          <div class="card"><small>Entradas</small><b>R$ 3.240,00</b></div>
-          <div class="card"><small>Saídas</small><b>R$ 1.460,00</b></div>
-          <div class="card"><small>Saques</small><b>R$ 600,00</b></div>
+        <div class="cards">
+          <div class="card"><small>Total investido (gastos)</small><b id="fin-investido">R$ 0,00</b></div>
+          <div class="card"><small>Total sacado</small><b id="fin-sacado">R$ 0,00</b></div>
         </div>
         <div class="barra">
           <h2>Movimentações</h2>
-          <button class="btn">+ Nova movimentação</button>
+          <button class="btn" id="btn-nova-mov">+ Nova movimentação</button>
         </div>
         <div class="painel">
           <div class="rolagem">
             <table>
-              <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>
-              <tbody>
-                <tr><td>25/09/2026</td><td>Entrada</td><td>Venda</td><td>Pedido #1042</td><td>R$ 79,80</td></tr>
-                <tr><td>24/09/2026</td><td>Saída</td><td>Vinil/Material</td><td>Rolo de vinil preto</td><td>R$ 120,00</td></tr>
-                <tr><td>22/09/2026</td><td>Saída</td><td>Camisa em Branco</td><td>Lote de 50 camisetas</td><td>R$ 925,00</td></tr>
-                <tr><td>20/09/2026</td><td>Saque</td><td>Retirada Pessoal</td><td>Retirada do mês</td><td>R$ 600,00</td></tr>
-              </tbody>
+              <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+              <tbody id="tabela-financeiro"></tbody>
             </table>
           </div>
         </div>
-        <p class="nota">Dados de exemplo — cadastro e cálculo financeiro entram na próxima etapa.</p>
+        <p class="nota">Saque não é gasto: o total investido soma só os gastos, e o total sacado soma só os saques.</p>
       </section>
     </main>
   </div>
 
 </div>
-<script src="js/app.js"></script>
+
+<!-- MODAL: formulário de nova movimentação financeira -->
+<dialog id="modal-mov">
+  <form id="form-mov" method="dialog">
+    <h2>Nova movimentação</h2>
+
+    <div class="campo">
+      <label for="mov-tipo">Tipo</label>
+      <select id="mov-tipo" required>
+        <option value="gasto">Gasto</option>
+        <option value="saque">Saque</option>
+      </select>
+    </div>
+
+    <div class="campo" id="campo-categoria">
+      <label for="mov-categoria">Categoria</label>
+      <select id="mov-categoria">
+        <option value="Camisetas">Camisetas</option>
+        <option value="Vinil">Vinil</option>
+        <option value="Ads">Ads</option>
+        <option value="Frete">Frete</option>
+        <option value="Embalagem">Embalagem</option>
+        <option value="Outros">Outros</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="mov-valor">Valor (R$)</label>
+      <input type="number" id="mov-valor" min="0.01" step="0.01" placeholder="0,00" required>
+    </div>
+
+    <div class="campo">
+      <label for="mov-data">Data</label>
+      <input type="date" id="mov-data" required>
+    </div>
+
+    <div class="campo">
+      <label for="mov-descricao">Descrição (opcional)</label>
+      <input type="text" id="mov-descricao" placeholder="Ex: rolo de vinil preto">
+    </div>
+
+    <div class="campo-acoes">
+      <button type="button" class="btn cinza" id="btn-cancelar-mov">Cancelar</button>
+      <button type="submit" class="btn">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* NAVEGAÇÃO: mostra uma página por vez, conforme o endereço (#dashboard, #estoque, #financeiro) */
+
+const paginas = { dashboard: "Dashboard", estoque: "Estoque", financeiro: "Financeiro" };
+
+function mostrarPagina() {
+  const nome = location.hash.slice(1);
+  const atual = nome in paginas ? nome : "dashboard";
+
+  document.querySelectorAll(".pagina").forEach(secao => {
+    secao.hidden = secao.id !== "pagina-" + atual;
+  });
+
+  document.querySelectorAll(".menu a").forEach(link => {
+    const ativo = link.dataset.pagina === atual;
+    link.classList.toggle("ativo", ativo);
+    if (ativo) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+  });
+
+  document.getElementById("titulo").textContent = paginas[atual];
+  document.title = paginas[atual] + " · Shopee Control";
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", mostrarPagina);
+mostrarPagina();
+
+
+/* ===== FINANCEIRO: registro de gastos e saques, guardado no navegador ===== */
+
+const CHAVE_FINANCEIRO = "shopee-control-financeiro-v1";
+const $ = id => document.getElementById(id);
+const moeda = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dataBR = iso => { const [a, m, d] = iso.split("-"); return `${d}/${m}/${a}`; };
+const escapar = t => String(t).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+function carregarMovimentacoes() {
+  try { return JSON.parse(localStorage.getItem(CHAVE_FINANCEIRO)) || []; }
+  catch (e) { return []; }
+}
+function salvarMovimentacoes(lista) {
+  try { localStorage.setItem(CHAVE_FINANCEIRO, JSON.stringify(lista)); return true; }
+  catch (e) { alert("Não consegui salvar no navegador. O dado não foi guardado."); return false; }
+}
+
+let movimentacoes = carregarMovimentacoes();
+
+function desenharFinanceiro() {
+  const ordenadas = [...movimentacoes].sort((a, b) => b.data.localeCompare(a.data));
+
+  $("tabela-financeiro").innerHTML = ordenadas.map(mov => `
+    <tr>
+      <td>${dataBR(mov.data)}</td>
+      <td>${mov.tipo === "gasto" ? "Gasto" : "Saque"}</td>
+      <td>${mov.tipo === "gasto" ? escapar(mov.categoria) : "—"}</td>
+      <td>${mov.descricao ? escapar(mov.descricao) : "—"}</td>
+      <td>${moeda(mov.valor)}</td>
+      <td class="acao-linha"><button class="mini" data-id="${mov.id}" title="Excluir">🗑</button></td>
+    </tr>`).join("") || `<tr><td colspan="6" class="vazio-linha">Nenhuma movimentação registrada ainda.</td></tr>`;
+
+  // Regra: saque não é gasto — cada total soma só o seu próprio tipo.
+  const totalInvestido = movimentacoes.filter(m => m.tipo === "gasto").reduce((s, m) => s + m.valor, 0);
+  const totalSacado = movimentacoes.filter(m => m.tipo === "saque").reduce((s, m) => s + m.valor, 0);
+  $("fin-investido").textContent = moeda(totalInvestido);
+  $("fin-sacado").textContent = moeda(totalSacado);
+}
+
+function alternarCampoCategoria() {
+  const ehGasto = $("mov-tipo").value === "gasto";
+  $("campo-categoria").hidden = !ehGasto;
+  $("mov-categoria").required = ehGasto;
+}
+
+if ($("modal-mov")) {
+  $("mov-tipo").addEventListener("change", alternarCampoCategoria);
+
+  $("btn-nova-mov").addEventListener("click", () => {
+    $("form-mov").reset();
+    $("mov-data").value = new Date().toISOString().slice(0, 10);
+    alternarCampoCategoria();
+    $("modal-mov").showModal();
+  });
+
+  $("btn-cancelar-mov").addEventListener("click", () => $("modal-mov").close());
+
+  $("form-mov").addEventListener("submit", e => {
+    e.preventDefault();
+    const tipo = $("mov-tipo").value;
+    const valor = parseFloat($("mov-valor").value);
+    if (!valor || valor <= 0) { alert("Informe um valor maior que zero."); return; }
+
+    movimentacoes.push({
+      id: Date.now(),
+      tipo,
+      categoria: tipo === "gasto" ? $("mov-categoria").value : null,
+      valor,
+      data: $("mov-data").value,
+      descricao: $("mov-descricao").value.trim()
+    });
+    salvarMovimentacoes(movimentacoes);
+    desenharFinanceiro();
+    $("modal-mov").close();
+  });
+
+  $("tabela-financeiro").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-id]");
+    if (!btn) return;
+    if (!confirm("Excluir esta movimentação?")) return;
+    movimentacoes = movimentacoes.filter(m => m.id !== Number(btn.dataset.id));
+    salvarMovimentacoes(movimentacoes);
+    desenharFinanceiro();
+  });
+
+  desenharFinanceiro();
+}
+
+</script>
 </body>
 </html>
