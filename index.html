@@ -78,6 +78,15 @@ dialog#modal-mov h2 { font-size: 17px; margin-bottom: 4px; }
 .campo input, .campo select { padding: 10px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; }
 .campo-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 
+/* ===== DASHBOARD: filtro de período e lista de gastos por categoria ===== */
+.filtro-periodo { display: flex; gap: 6px; }
+.filtro-periodo button { padding: 8px 14px; border: 1px solid var(--borda); background: #fff; color: var(--suave); border-radius: 8px; font-size: 13px; font-family: inherit; cursor: pointer; }
+.filtro-periodo button.ativo { background: var(--azul); color: #fff; border-color: var(--azul); }
+.lista-categorias { padding: 4px 0; }
+.cat-linha { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--borda); font-size: 14px; }
+.cat-linha:last-child { border-bottom: 0; }
+.cat-linha b { font-weight: 600; }
+
 /* ===== BARRA DE AÇÕES, BOTÕES E TABELAS ===== */
 .barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .barra h2 { font-size: 17px; }
@@ -140,9 +149,9 @@ tbody tr:last-child td { border-bottom: 0; }
       <section class="pagina" id="pagina-dashboard">
         <div class="cards">
           <div class="card"><small>Peças em estoque</small><b>128</b></div>
-          <div class="card"><small>Faturamento do mês</small><b>R$ 3.240,00</b></div>
-          <div class="card"><small>Lucro líquido</small><b>R$ 1.180,00</b></div>
-          <div class="card"><small>Margem</small><b>36,4%</b></div>
+          <div class="card"><small>Investido</small><b id="dash-investido">R$ 0,00</b></div>
+          <div class="card"><small>Sacado</small><b id="dash-sacado">R$ 0,00</b></div>
+          <div class="card"><small>Diferença</small><b id="dash-diferenca">R$ 0,00</b></div>
         </div>
 
         <div class="aviso">
@@ -150,9 +159,16 @@ tbody tr:last-child td { border-bottom: 0; }
           <span><b>Estoque baixo:</b> Camiseta Frase Motivacional Preta/GG (2 un.) · Preta/G (3 un.)</span>
         </div>
 
-        <div class="painel texto">
-          <h2>Resumo do mês</h2>
-          <p>18 pedidos entregues, ticket médio de R$ 180,00 e 2 variações precisando de reposição. Quando o Estoque e o Financeiro estiverem funcionando, esses números serão calculados automaticamente.</p>
+        <div class="barra">
+          <h2>Gastos por categoria</h2>
+          <div class="filtro-periodo">
+            <button type="button" data-periodo="hoje">Hoje</button>
+            <button type="button" data-periodo="semana">Esta semana</button>
+            <button type="button" data-periodo="mes" class="ativo">Este mês</button>
+          </div>
+        </div>
+        <div class="painel">
+          <div id="dash-categorias" class="lista-categorias"></div>
         </div>
       </section>
 
@@ -324,12 +340,68 @@ function alternarCampoCategoria() {
   $("mov-categoria").required = ehGasto;
 }
 
+
+/* ===== DASHBOARD: mesmas movimentações do Financeiro, por período ===== */
+
+const CATEGORIAS = ["Camisetas", "Vinil", "Ads", "Frete", "Embalagem", "Outros"];
+let periodoAtual = "mes"; // período inicial ao abrir o app
+
+// Data local em formato AAAA-MM-DD, sem o deslocamento de fuso horário do toISOString()
+function paraISO(d) {
+  const ano = d.getFullYear(), mes = String(d.getMonth() + 1).padStart(2, "0"), dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function inicioFimSemana() {
+  const hoje = new Date();
+  const diaSemana = hoje.getDay(); // 0 = domingo ... 6 = sábado
+  const voltarAteSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
+  const segunda = new Date(hoje); segunda.setDate(hoje.getDate() - voltarAteSegunda);
+  const domingo = new Date(segunda); domingo.setDate(segunda.getDate() + 6);
+  return { inicio: paraISO(segunda), fim: paraISO(domingo) };
+}
+
+function movimentacoesNoPeriodo(periodo) {
+  const hoje = paraISO(new Date());
+  if (periodo === "hoje") return movimentacoes.filter(m => m.data === hoje);
+  if (periodo === "semana") {
+    const { inicio, fim } = inicioFimSemana();
+    return movimentacoes.filter(m => m.data >= inicio && m.data <= fim);
+  }
+  return movimentacoes.filter(m => m.data.slice(0, 7) === hoje.slice(0, 7)); // este mês
+}
+
+function desenharDashboard() {
+  const lista = movimentacoesNoPeriodo(periodoAtual);
+  const investido = lista.filter(m => m.tipo === "gasto").reduce((s, m) => s + m.valor, 0);
+  const sacado = lista.filter(m => m.tipo === "saque").reduce((s, m) => s + m.valor, 0);
+  const diferenca = investido - sacado;
+
+  $("dash-investido").textContent = moeda(investido);
+  $("dash-sacado").textContent = moeda(sacado);
+  const elDiferenca = $("dash-diferenca");
+  elDiferenca.textContent = moeda(diferenca);
+  elDiferenca.classList.toggle("baixo", diferenca < 0);
+
+  const somas = Object.fromEntries(CATEGORIAS.map(c => [c, 0]));
+  lista.filter(m => m.tipo === "gasto").forEach(m => { somas[m.categoria] = (somas[m.categoria] || 0) + m.valor; });
+  $("dash-categorias").innerHTML = CATEGORIAS.map(c => `<div class="cat-linha"><span>${c}</span><b>${moeda(somas[c])}</b></div>`).join("");
+}
+
+document.querySelectorAll(".filtro-periodo button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    periodoAtual = btn.dataset.periodo;
+    document.querySelectorAll(".filtro-periodo button").forEach(b => b.classList.toggle("ativo", b === btn));
+    desenharDashboard();
+  });
+});
+
 if ($("modal-mov")) {
   $("mov-tipo").addEventListener("change", alternarCampoCategoria);
 
   $("btn-nova-mov").addEventListener("click", () => {
     $("form-mov").reset();
-    $("mov-data").value = new Date().toISOString().slice(0, 10);
+    $("mov-data").value = paraISO(new Date());
     alternarCampoCategoria();
     $("modal-mov").showModal();
   });
@@ -352,6 +424,7 @@ if ($("modal-mov")) {
     });
     salvarMovimentacoes(movimentacoes);
     desenharFinanceiro();
+    desenharDashboard();
     $("modal-mov").close();
   });
 
@@ -362,9 +435,11 @@ if ($("modal-mov")) {
     movimentacoes = movimentacoes.filter(m => m.id !== Number(btn.dataset.id));
     salvarMovimentacoes(movimentacoes);
     desenharFinanceiro();
+    desenharDashboard();
   });
 
   desenharFinanceiro();
+  desenharDashboard();
 }
 
 </script>
